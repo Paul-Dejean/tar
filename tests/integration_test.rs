@@ -154,3 +154,58 @@ fn should_extract_file_from_tar() {
 
     assert_eq!(extracted_content, file_content1);
 }
+#[test]
+fn should_be_able_to_create_a_tarball() {
+    let dir = create_temp_dir();
+
+    let file_content1 = "Hello World";
+    let file1 = create_temp_file(&dir, file_content1);
+    let file_name1 = file1
+        .path()
+        .file_name()
+        .expect("error extracting file name")
+        .to_str()
+        .expect("error converting file name to string");
+    let file_content2 = "I have a dream!";
+    let file2 = create_temp_file(&dir, file_content2);
+    let file_name2 = file2
+        .path()
+        .file_name()
+        .expect("error extracting file name")
+        .to_str()
+        .expect("error converting file name to string");
+
+    let dir2 = create_temp_dir();
+    let archive_name = "archive.tar";
+
+    let mut cmd = Command::cargo_bin("ctar").expect("error getting ctar binary");
+
+    cmd.args(["-cf", archive_name])
+        .current_dir(dir.path())
+        .args([file_name1, file_name2])
+        .assert()
+        .code(0);
+
+    ProcessCommand::new("mv")
+        .current_dir(dir.path())
+        .arg(archive_name)
+        .arg(dir2.path().to_str().unwrap().to_string() + "/" + archive_name)
+        .output()
+        .expect("error moving tar archive");
+
+    ProcessCommand::new("tar")
+        .current_dir(dir2.path())
+        .args(["-xf", &archive_name])
+        .output()
+        .expect("error extracting files in tar archive");
+
+    let extracted_file_path1 = dir2.path().join(file_name1);
+    let extracted_content1 =
+        std::fs::read_to_string(&extracted_file_path1).expect("error reading extracted file");
+    assert_eq!(extracted_content1, file_content1);
+
+    let extracted_file_path2 = dir2.path().join(file_name2);
+    let extracted_content2 =
+        std::fs::read_to_string(&extracted_file_path2).expect("error reading extracted file");
+    assert_eq!(extracted_content2, file_content2);
+}
