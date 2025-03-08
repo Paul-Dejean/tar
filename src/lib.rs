@@ -14,7 +14,7 @@ use users::get_user_by_uid;
 
 #[derive(Parser, Debug)]
 #[command(name = "ctar")]
-#[command(author = "Ebooth <pauldejeandev@gmail.com>")]
+#[command(author = "Paul Dejean <pauldejeandev@gmail.com>")]
 #[command(version = "1.0")]
 #[command(about = "A copy of unix command line tool tar", long_about = None)]
 pub struct Args {
@@ -66,6 +66,8 @@ fn launch(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
         .map(|value| read_tar_achive(value))
         .unwrap_or_else(|| read_from_stdin())?;
 
+    println!("{:?}", data);
+
     let blocks: Vec<[u8; 512]> = data
         .chunks_exact(512)
         .map(|chunk| chunk.try_into().expect("Invalid chunk size"))
@@ -78,6 +80,7 @@ fn launch(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
         }
     } else if args.extract {
         let files = extract_files(blocks)?;
+        println!("{:?}", files);
         for (file_name, content) in files {
             fs::write(&file_name, content)?;
         }
